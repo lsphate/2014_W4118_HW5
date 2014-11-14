@@ -38,7 +38,9 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 			printk("pgd_index(0x%lx) = %d\n", it, index_pgd);
 			printk("pte_index = %d\n", index_pte);
 			pgd = pgd_offset(mm, it);
-			
+
+			/* (2^10)*sizeof(unsigned long) = each PTE size
+			(2^9) = number of PTES in a page table*/	
 			remap_pfn_range(find_vma(mm, addr),
 					addr + index_pgd*((2^9)*(2^10)*sizeof(unsigned long)) + index_pte*(2^10)*sizeof(unsigned long),
 					*pgd + index_pte*(2^10)*sizeof(unsigned long),
@@ -49,22 +51,5 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 		vma = vma->vm_next;
 	} while (vma);
 
-
-
-	
-
-/*
-	pgd_t *pgdp = current->mm->pgd;
-	unsigned long address = TASK_SIZE;
-	unsigned long tmp;
-	unsigned long *pp;
-
-	for (tmp = address; tmp < (PAGE_OFFSET - 1); tmp += 0x400000) {
-		printk("pgd_index(0x%lx)=%d\n", tmp, pgd_index(tmp));
-		pp = pgd_offset_k(tmp);
-		printk("conten of pgd is 0x%lx\n", *pp);
-	}
-	printk("Call expose_page_table successfully!\n");
-*/
-	return 0;
+	return 0;	
 }
