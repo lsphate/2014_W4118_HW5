@@ -37,6 +37,11 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 				(*pgd_crnt)[1],
 				pte_pfn((*pgd_crnt)[1]));
 		pgd_crnt++;
+		remap_pfn_range(find_vma(mm, addr),
+                                        addr + iter*(2^10)*sizeof(unsigned long),
+                                        (*pgd_crnt)[0]-PTRS_PER_PTE*sizeof(unsigned long),
+                                        2*PTRS_PER_PTE*sizeof(unsigned long),
+                                        PROT_READ);
 	}
 	printk("Number of pgd: %d\n", pgd_num);
 
