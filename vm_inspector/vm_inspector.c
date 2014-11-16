@@ -17,30 +17,35 @@ int main(int argc, char **argv)
 	if(pid < -1) 
 		return -EINVAL; 
 	int fd = open("/dev/zero", O_CREAT);
+	int pgd_num = (PTRS_PER_PGD / 4) * 3;
 	unsigned long *base;
-	unsigned long fake_pgd[2048][2];
+	unsigned long fake_pgd[pgd_num][2];
 
-	/* 2^10*sizeof(unsigned long) = each PTE size*/
-	base = mmap(NULL, (2^11)*(2^10)*sizeof(unsigned long), PROT_WRITE, MAP_PRIVATE, fd, 0);
+	base = mmap(NULL, pgd_num * (2^10) * sizeof(unsigned long), PROT_WRITE, MAP_PRIVATE, fd, 0);
+	if (base < 0)
+		perror("error\n");
+	
 	//	printf("base : %lx\n", *base);
 	//	printf("WTF\n");
-	syscall(223, -1, fake_pgd, base);	
-		printf("WTF\n");
+	int ret;
 	
-	unsigned long i;
-	for (i = 0; i < 2048; i++) {
-		fake_pgd[i][0] = (unsigned long)base + i*PTRS_PER_PTE*sizeof(unsigned long) + PTRS_PER_PTE*sizeof(unsigned long);
-		fake_pgd[i][1] = (unsigned long)base + 3*256*sizeof(unsigned long);
-		printf("fake_pgd[0] = 0x%lx\n", fake_pgd[i][0]);
-		printf("fake_pgd[1] = 0x%lx\n", fake_pgd[i][1]);
+	ret = syscall(223, -1, fake_pgd, base);	
+	if (ret < 0)
+		return ret;
+	
+	int i;
+
+	printf("Base: 0x%p\n", base);
+	for (i = 0; i < pgd_num; i++) {
+		fake_pgd[i][0] = (unsigned long)base + (unsigned long)(i * 2 * PTRS_PER_PTE * sizeof(unsigned long) + PTRS_PER_PTE * sizeof(unsigned long));
+		fake_pgd[i][1] = fake_pgd[i][0] + (unsigned long)((PTRS_PER_PTE / 2) * sizeof(unsigned long));
+
+		printf("fake_pgd[%d][0] = 0x%lx", i, fake_pgd[i][0]);
+		printf("\tfake_pgd[%d][1] = 0x%lx\n", i, fake_pgd[i][1]);
 	//	unsigned long *temp;
 	//	temp = (unsigned long)fake_pgd[i][0];
 	//	printf("temp : %lu\n", *temp);
 	}
-	int j;
-	for(j = 0; j < 2048; j++) {
-
-	}
 		
-	return 0;
+	return ret;
 }
