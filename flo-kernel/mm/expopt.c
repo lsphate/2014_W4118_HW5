@@ -25,7 +25,7 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 	int iter;
 	int pgd_num = (PTRS_PER_PGD / 4) * 3;
 	pgd_t *pgd_crnt;
-	unsigned long pte_base, *pte_0_base, *pte_1_base, *fake_pgd_k;
+	unsigned long pte_base, *pte_0_base, *pte_1_base, *fake_pgd_k, *fake_pgd_k_temp;
 
 	struct task_struct *p = pid_task(find_vpid(pid), PIDTYPE_PID);
 	struct mm_struct *mm = p->mm;
@@ -34,6 +34,7 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 	if (!fake_pgd_k)
 		return -EFAULT;
 
+	fake_pgd_k_temp = fake_pgd_k;
 	pgd_crnt = mm->pgd;
 	for (iter = 0; iter < pgd_num; iter++) {
 		pte_base = ((unsigned long)((*pgd_crnt)[0])) & PAGE_MASK;
@@ -60,9 +61,9 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 		else {
 			remap_pfn_range(find_vma(current->mm, addr), addr, pte_base, PAGE_SIZE,
 				current->mm->mmap->vm_page_prot);
-			fake_pgd_k = pte_0_base;
+			*fake_pgd_k = pte_0_base;
 			fake_pgd_k++;
-			fake_pgd_k = pte_1_base;
+			*fake_pgd_k = pte_1_base;
 			if (iter != pgd_num -1)
 				fake_pgd_k++;
 		}
@@ -102,8 +103,10 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 
 	} while (vma);
 */
-	if (copy_to_user((unsigned long *)fake_pgd, fake_pgd_k, sizeof(unsigned long) * 4096))
+	 printk("fake_pgd_k : %lx, fake_pgd_k_temp : %lx\n", fake_pgd_k, fake_pgd_k_temp);
+	if (copy_to_user((unsigned long *)fake_pgd, fake_pgd_k_temp, sizeof(unsigned long) * 4096))
 		return -EFAULT;
-	kfree(fake_pgd_k);
+	printk("WTFFFFFFFFFF\n");
+	kfree(fake_pgd_k_temp);
 	return 0;	
 }
