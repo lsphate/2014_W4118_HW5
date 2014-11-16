@@ -5,36 +5,45 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <malloc.h>
 
 #define PTRS_PER_PTE 512
 #define PTRS_PER_PGD 2048
+#define PAGE_SIZE 4096
 
 int main(int argc, char **argv)
 {
-	int pid = atoi(argv[2]);
-	if(pid < -1) 
-		return -EINVAL; 
-	int fd = open("/dev/zero", O_CREAT);
-	int pgd_num = (PTRS_PER_PGD / 4) * 3;
-	unsigned long *base;
-	unsigned long fake_pgd[pgd_num][2];
+	int pid, fd, pgd_num, ret;
+	unsigned long *base, *fake_pgd;
 
+	pid = atoi(argv[2]);
+	if(pid < -1)
+		return -EINVAL;
+	
+	fd = open("/dev/zero", O_CREAT);
+	if (fd < 0)
+		perror("file open error.\n");
+
+	pgd_num = (PTRS_PER_PGD / 4) * 3;
 	base = mmap(NULL, pgd_num * (2^10) * sizeof(unsigned long), PROT_WRITE, MAP_PRIVATE, fd, 0);
-	if (base < 0)
-		perror("error\n");
+	if (base < 0) {
+		perror("mmap error.\n");
+		return -1;
+	}
+
+	ret = posix_memalign((void **)&fake_pgd, PAGE_SIZE, PTRS_PER_PGD * 2 * sizeof(unsigned long));
+	if (ret) {
+		perror("posix_menalign error.\n");
+		return -1;
+	}
 	
-	//	printf("base : %lx\n", *base);
-	//	printf("WTF\n");
-	int ret;
-	
-	ret = syscall(223, -1, fake_pgd, base);	
+	ret = syscall(223, -1, (unsigned long)fake_pgd, (unsigned long)base);	
 	if (ret < 0)
 		return ret;
 	
-	int i;
-
+/*====================Print starts below here====================*/
+/*	int i;
 	printf("Base: 0x%p\n", base);
 	for (i = 0; i < pgd_num; i++) {
 		fake_pgd[i][0] = (unsigned long)base + (unsigned long)(i * 2 * PTRS_PER_PTE * sizeof(unsigned long) + PTRS_PER_PTE * sizeof(unsigned long));
@@ -46,6 +55,9 @@ int main(int argc, char **argv)
 	//	temp = (unsigned long)fake_pgd[i][0];
 	//	printf("temp : %lu\n", *temp);
 	}
-		
+*/
+	close(fd);
+	free((void *)fake_pgd);
+	munmap((void *)base, pgd_num * (2^10) * sizeof(unsigned long));
 	return ret;
 }

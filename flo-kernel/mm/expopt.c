@@ -23,20 +23,18 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 	int iter;
 	int pgd_num = (PTRS_PER_PGD / 4) * 3;
 	pgd_t *pgd_crnt;
-	pte_t *pte_1, *pte_2;
+	unsigned long pte_base, *pte_0_base, *pte_1_base;
 
 	struct task_struct *p = pid_task(find_vpid(pid), PIDTYPE_PID);
 	struct mm_struct *mm = p->mm;
 
 	pgd_crnt = mm->pgd;
 	for (iter = 0; iter < pgd_num; iter++) {
-		printk("Index: %d(0x%lx)  --->\tpte[0]: 0x%lx(%d), pte[1]: 0x%lx(%d)\n",
-				iter,
-				pgd_crnt,
-				(*pgd_crnt)[0],
-				pte_pfn((*pgd_crnt)[0]),
-				(*pgd_crnt)[1],
-				pte_pfn((*pgd_crnt)[1]));
+		pte_base = ((unsigned long)((*pgd_crnt)[0])) & PAGE_MASK;
+		pte_0_base = (unsigned long *)(pte_base + 0x800);
+		pte_1_base = (unsigned long *)(pte_base + 0xc00);
+		printk("(Index: %d)L1 table pointer: 0x%08lx  --->\tL2 table base: 0x%08lx\n", iter, pgd_crnt, pte_base);
+		printk("L2 H/W base pointer[0]: 0x%08lx\t[1]: 0x%08lx\n", pte_0_base, pte_1_base);
 		pgd_crnt++;
 
 /*
@@ -51,16 +49,15 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
  */
 		down_write(&(current->mm->mmap_sem));
 		remap_pfn_range(find_vma(current->mm, addr),
-				addr + iter * (2^10) * sizeof(unsigned long),
-				(*pgd_crnt)[0] - PTRS_PER_PTE * sizeof(unsigned long),
-				2 * PTRS_PER_PTE * sizeof(unsigned long),
+				addr + iter * PAGE_SIZE,
+				pte_base,
+				PAGE_SIZE,
 				current->mm->mmap->vm_page_prot);
 		up_write(&(current->mm->mmap_sem));
 	}
 	printk("Number of pgd: %d\n", pgd_num);
 
 /*
-
 	struct task_struct *p = pid_task(find_vpid(pid), PIDTYPE_PID);
 	struct mm_struct *mm = p->mm;
 	struct vm_area_struct *vma = mm->mmap;
