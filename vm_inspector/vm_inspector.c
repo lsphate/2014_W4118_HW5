@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	ret = posix_memalign((void **)fake_pgd, PAGE_SIZE, PTRS_PER_PGD * 2 * sizeof(unsigned long));
+	ret = posix_memalign((void **)&fake_pgd, PAGE_SIZE, PTRS_PER_PGD * 2 * sizeof(unsigned long));
 	if (ret) {
 		perror("posix_menalign error.\n");
 		return -1;
