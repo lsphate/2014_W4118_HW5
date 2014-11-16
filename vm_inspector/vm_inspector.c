@@ -17,6 +17,8 @@ int main(int argc, char **argv)
 	int pid, fd, pgd_num, ret;
 	unsigned long *base, *fake_pgd;
 
+	base = NULL;
+	fake_pgd = NULL;
 	pid = atoi(argv[2]);
 	if(pid < -1)
 		return -EINVAL;
@@ -32,13 +34,13 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	ret = posix_memalign((void **)&fake_pgd, PAGE_SIZE, PTRS_PER_PGD * 2 * sizeof(unsigned long));
+	ret = posix_memalign((void **)fake_pgd, PAGE_SIZE, PTRS_PER_PGD * 2 * sizeof(unsigned long));
 	if (ret) {
 		perror("posix_menalign error.\n");
 		return -1;
 	}
 	
-	ret = syscall(223, -1, (unsigned long)fake_pgd, (unsigned long)base);	
+	ret = syscall(223, -1, (unsigned long)(fake_pgd), (unsigned long)base);	
 	if (ret < 0)
 		return ret;
 	
