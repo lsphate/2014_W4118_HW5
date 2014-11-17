@@ -57,9 +57,6 @@ int main(int argc, char **argv)
 
 		printf("fake_pgd[%d][0] = 0x%08lx\t", iter, fake_pgd_entry[0]);
 		printf("fake_pgd[%d][1] = 0x%08lx\n", iter, fake_pgd_entry[1]);
-	//	unsigned long *temp;
-	//	temp = (unsigned long)fake_pgd[i][0];
-	//	printf("temp : %lu\n", *temp);
 	}
 
 	close(fd);
