@@ -14,12 +14,26 @@
 
 int main(int argc, char **argv)
 {
-	int pid, fd, pgd_num, ret;
+	int pid, fd, pgd_num, ret, v;
 	unsigned long *base, *fake_pgd;
 
 	base = NULL;
 	fake_pgd = NULL;
-	pid = atoi(argv[2]);
+	
+	
+
+	if (argv[2] == '\0') {
+		pid = atoi(argv[1]);
+		v = 0;
+	}
+	else {
+		pid = atoi(argv[2]);
+		v = 1;
+		}
+
+/* this printf will cause crashing = = */
+//	printf ("pid : %d\n", pid);
+	
 	if(pid < -1)
 		return -EINVAL;
 	
@@ -39,25 +53,51 @@ int main(int argc, char **argv)
 		perror("posix_menalign error.\n");
 		return -1;
 	}
+	printf("safe until here.\n");
 	
 	ret = syscall(223, -1, (unsigned long)(fake_pgd), (unsigned long)base);	
 	if (ret < 0)
 		return ret;
 	
 /*====================Print starts below here====================*/
-/*	int i;
-	printf("Base: 0x%p\n", base);
-	for (i = 0; i < pgd_num; i++) {
-		fake_pgd[i][0] = (unsigned long)base + (unsigned long)(i * 2 * PTRS_PER_PTE * sizeof(unsigned long) + PTRS_PER_PTE * sizeof(unsigned long));
-		fake_pgd[i][1] = fake_pgd[i][0] + (unsigned long)((PTRS_PER_PTE / 2) * sizeof(unsigned long));
+	int iter;
+	unsigned long fake_pgd_entry[2];
+	
+/* print everything*/	
+if (v == 1) {
+	for (iter = 0; iter < pgd_num; iter++) {
+		fake_pgd_entry[0] = (*fake_pgd);
+		fake_pgd++;
+		fake_pgd_entry[1] = (*fake_pgd);
+		if (iter != pgd_num -1)
+			fake_pgd++;
 
-		printf("fake_pgd[%d][0] = 0x%lx", i, fake_pgd[i][0]);
-		printf("\tfake_pgd[%d][1] = 0x%lx\n", i, fake_pgd[i][1]);
-	//	unsigned long *temp;
-	//	temp = (unsigned long)fake_pgd[i][0];
-	//	printf("temp : %lu\n", *temp);
+
+		printf("fake_pgd[%d][0] = 0x%08lx\t", iter, fake_pgd_entry[0]);
+		printf("fake_pgd[%d][1] = 0x%08lx\n", iter, fake_pgd_entry[1]);
 	}
-*/
+}
+
+/* print that is not NULL */
+else {
+	for (iter = 0; iter < pgd_num; iter++) {
+                fake_pgd_entry[0] = (*fake_pgd);
+                fake_pgd++;
+                fake_pgd_entry[1] = (*fake_pgd);
+                if (iter != pgd_num -1)
+                        fake_pgd++;
+		
+		if (fake_pgd_entry[0] != 2048 ) {
+                printf("fake_pgd[%d][0] = 0x%08lx\t", iter, fake_pgd_entry[0]);
+                printf("fake_pgd[%d][1] = 0x%08lx\n", iter, fake_pgd_entry[1]);
+        	}
+	}
+
+
+}
+
+
+
 	close(fd);
 	free((void *)fake_pgd);
 	munmap((void *)base, pgd_num * (2^10) * sizeof(unsigned long));
