@@ -59,7 +59,7 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 		if (!access_ok(VERIFY_WRITE, addr, PAGE_SIZE))
 			return -EFAULT;
 		else {
-			remap_pfn_range(find_vma(current->mm, addr), addr, pte_base, PAGE_SIZE,
+			remap_pfn_range(find_vma(current->mm, addr), addr, pte_base >> PAGE_SHIFT, PAGE_SIZE,
 				current->mm->mmap->vm_page_prot);
 			*fake_pgd_k = pte_0_base;
 			fake_pgd_k++;
