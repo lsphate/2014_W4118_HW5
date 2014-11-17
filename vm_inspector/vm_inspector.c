@@ -14,12 +14,26 @@
 
 int main(int argc, char **argv)
 {
-	int pid, fd, pgd_num, ret;
+	int pid, fd, pgd_num, ret, v;
 	unsigned long *base, *fake_pgd;
 
 	base = NULL;
 	fake_pgd = NULL;
-	pid = atoi(argv[2]);
+	
+	
+
+	if (argv[2] == '\0') {
+		pid = atoi(argv[1]);
+		v = 0;
+	}
+	else {
+		pid = atoi(argv[2]);
+		v = 1;
+		}
+
+/* this printf will cause crashing = = */
+//	printf ("pid : %d\n", pid);
+	
 	if(pid < -1)
 		return -EINVAL;
 	
@@ -48,6 +62,9 @@ int main(int argc, char **argv)
 /*====================Print starts below here====================*/
 	int iter;
 	unsigned long fake_pgd_entry[2];
+	
+/* print everything*/	
+if (v == 1) {
 	for (iter = 0; iter < pgd_num; iter++) {
 		fake_pgd_entry[0] = (*fake_pgd);
 		fake_pgd++;
@@ -55,12 +72,34 @@ int main(int argc, char **argv)
 		if (iter != pgd_num -1)
 			fake_pgd++;
 
+
 		printf("fake_pgd[%d][0] = 0x%08lx\t", iter, fake_pgd_entry[0]);
 		printf("fake_pgd[%d][1] = 0x%08lx\n", iter, fake_pgd_entry[1]);
 	}
+}
+
+/* print that is not NULL */
+else {
+	for (iter = 0; iter < pgd_num; iter++) {
+                fake_pgd_entry[0] = (*fake_pgd);
+                fake_pgd++;
+                fake_pgd_entry[1] = (*fake_pgd);
+                if (iter != pgd_num -1)
+                        fake_pgd++;
+		
+		if (fake_pgd_entry[0] != 2048 ) {
+                printf("fake_pgd[%d][0] = 0x%08lx\t", iter, fake_pgd_entry[0]);
+                printf("fake_pgd[%d][1] = 0x%08lx\n", iter, fake_pgd_entry[1]);
+        	}
+	}
+
+
+}
+
+
 
 	close(fd);
-	free((void *)fake_pgd);
+//	free((void*)fake_pgd);
 	munmap((void *)base, pgd_num * (2^10) * sizeof(unsigned long));
 	return ret;
 }
