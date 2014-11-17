@@ -99,7 +99,7 @@ else {
 
 
 	close(fd);
-	free((void *)fake_pgd);
+//	free((void*)fake_pgd);
 	munmap((void *)base, pgd_num * (2^10) * sizeof(unsigned long));
 	return ret;
 }
