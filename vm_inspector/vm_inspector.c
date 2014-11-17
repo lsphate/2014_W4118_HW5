@@ -34,8 +34,12 @@ int main(int argc, char **argv)
 		perror("mmap error.\n");
 		return -1;
 	}
+<<<<<<< HEAD
 	printf("finish mmap\n");
 	
+=======
+
+>>>>>>> 736a587bbaee21c112a978c0eb143de2c0aaa564
 	ret = posix_memalign((void **)&fake_pgd, PAGE_SIZE, PTRS_PER_PGD * 2 * sizeof(unsigned long));
 	if (ret) {
 		perror("posix_menalign error.\n");
