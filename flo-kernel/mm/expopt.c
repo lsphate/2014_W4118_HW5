@@ -59,7 +59,7 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 		if (!access_ok(VERIFY_WRITE, addr, PAGE_SIZE))
 			return -EFAULT;
 		else {
-			remap_pfn_range(find_vma(current->mm, addr), addr, (pte_base >> PAGE_SHIFT), PAGE_SIZE,
+			remap_pfn_range(find_vma(current->mm, addr), addr, pte_base >> 12, PAGE_SIZE,
 				current->mm->mmap->vm_page_prot);
 			*fake_pgd_k = pte_0_base;
 			fake_pgd_k++;
@@ -74,7 +74,6 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 	printk("fake_pgd_k : %lx, fake_pgd_k_temp : %lx\n", fake_pgd_k, fake_pgd_k_temp);
 	if (copy_to_user((unsigned long *)fake_pgd, fake_pgd_k_temp, sizeof(unsigned long) * 4096))
 		return -EFAULT;
-	printk("WTFFFFFFFFFF\n");
 	kfree(fake_pgd_k_temp);
 	return 0;	
 }

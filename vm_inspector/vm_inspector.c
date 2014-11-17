@@ -26,7 +26,6 @@ int main(int argc, char **argv)
 	fd = open("/dev/zero", O_CREAT);
 	if (fd < 0)
 		perror("file open error.\n");
-	printf("finish file open.\n");
 
 	pgd_num = (PTRS_PER_PGD / 4) * 3;
 	base = mmap(NULL, pgd_num * (2^10) * sizeof(unsigned long), PROT_WRITE, MAP_PRIVATE, fd, 0);
@@ -34,14 +33,13 @@ int main(int argc, char **argv)
 		perror("mmap error.\n");
 		return -1;
 	}
-	printf("finish mmap\n");
 
 	ret = posix_memalign((void **)&fake_pgd, PAGE_SIZE, PTRS_PER_PGD * 2 * sizeof(unsigned long));
 	if (ret) {
 		perror("posix_menalign error.\n");
 		return -1;
 	}
-	printf("finish posix\n");
+	printf("safe until here.\n");
 	
 	ret = syscall(223, -1, (unsigned long)(fake_pgd), (unsigned long)base);	
 	if (ret < 0)
