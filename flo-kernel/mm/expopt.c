@@ -39,11 +39,13 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 	pgd_crnt = mm->pgd;
 	for (iter = 0; iter < pgd_num; iter++) {
 		pte_base = ((unsigned long)((*pgd_crnt)[0])) & PAGE_MASK;
+//		pte_0_base = (unsigned long *)(pte_base + 0x800);
+//		pte_1_base = (unsigned long *)(pte_base + 0xc00);
 		pte_0_base = (*pgd_crnt)[0];
 		pte_1_base = (*pgd_crnt)[1];
 		printk("(%d)L1 Table Ptr: 0x%08lx ---> L2 Table base: 0x%08lx\n", iter, pgd_crnt, pte_base);
-		printk("\tL2 H/W Table Pointer[0] = 0x%08lx\n", (unsigned long)pte_0_base);
-		printk("\tL2 H/W Table Pointer[1] = 0x%08lx\n", (unsigned long)pte_1_base);
+		printk("\tL2 H/W Table Pointer[0] = 0x%08lx\n", pte_0_base);
+		printk("\tL2 H/W Table Pointer[1] = 0x%08lx\n", pte_1_base);
 		pgd_crnt++;
 
 /*
