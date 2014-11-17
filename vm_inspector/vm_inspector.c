@@ -46,19 +46,22 @@ int main(int argc, char **argv)
 		return ret;
 	
 /*====================Print starts below here====================*/
-/*	int i;
-	printf("Base: 0x%p\n", base);
-	for (i = 0; i < pgd_num; i++) {
-		fake_pgd[i][0] = (unsigned long)base + (unsigned long)(i * 2 * PTRS_PER_PTE * sizeof(unsigned long) + PTRS_PER_PTE * sizeof(unsigned long));
-		fake_pgd[i][1] = fake_pgd[i][0] + (unsigned long)((PTRS_PER_PTE / 2) * sizeof(unsigned long));
+	int iter;
+	unsigned long fake_pgd_entry[2];
+	for (iter = 0; iter < pgd_num; iter++) {
+		fake_pgd_entry[0] = (*fake_pgd);
+		fake_pgd++;
+		fake_pgd_entry[1] = (*fake_pgd);
+		if (iter != pgd_num -1)
+			fake_pgd++;
 
-		printf("fake_pgd[%d][0] = 0x%lx", i, fake_pgd[i][0]);
-		printf("\tfake_pgd[%d][1] = 0x%lx\n", i, fake_pgd[i][1]);
+		printf("fake_pgd[%d][0] = 0x%08lx\t", iter, fake_pgd_entry[0]);
+		printf("fake_pgd[%d][1] = 0x%08lx\n", iter, fake_pgd_entry[1]);
 	//	unsigned long *temp;
 	//	temp = (unsigned long)fake_pgd[i][0];
 	//	printf("temp : %lu\n", *temp);
 	}
-*/
+
 	close(fd);
 	free((void *)fake_pgd);
 	munmap((void *)base, pgd_num * (2^10) * sizeof(unsigned long));
