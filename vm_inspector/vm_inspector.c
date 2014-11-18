@@ -30,23 +30,23 @@ void PrintFakePgd(unsigned long remap_pte)
 	rdonly_bit =	remap_pte & L_PTE_RDONLY;
 	xn_bit =	remap_pte & L_PTE_XN;
 
-	printf("0x%08lx\t\t%lx\t%lx\t%lx\t%lx\t%lx\n", phys, young_bit, file_bit, dirty_bit, rdonly_bit, xn_bit);
+	printf("0x%lx\t\t%lx\t%lx\t%lx\t%lx\t%lx\n", phys, young_bit, file_bit, dirty_bit, rdonly_bit, xn_bit);
 }
 
 int main(int argc, char **argv)
 {
-	int pid, fd, pgd_num, ret, v = 0;
+	int pid, fd, pgd_num, ret;
 	unsigned long *base, *fake_pgd;
 
 	base = NULL;
 	fake_pgd = NULL;
 	if (argv[2] == '\0') {
 		pid = atoi(argv[1]);
-		v = 0;
+		//v = 0;
 	}
 	else {
 		pid = atoi(argv[2]);
-		v = 1;
+		//v = 1;
 	}
 
 /* this printf will cause crashing = = */
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 		perror("file open error.\n");
 
 	pgd_num = (PTRS_PER_PGD / 4) * 3;
-	base = mmap(NULL, PTRS_PER_PGD * (2^10) * sizeof(unsigned long), PROT_READ, MAP_SHARED, fd, 0);
+	base = mmap(NULL, PTRS_PER_PGD * (2^10) * sizeof(unsigned long), PROT_READ, MAP_PRIVATE, fd, 0);
 	if (base < 0) {
 		perror("mmap error.\n");
 		return -1;
@@ -72,67 +72,45 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	ret = syscall(223, pid, (unsigned long)(fake_pgd), (unsigned long)base);	
+	ret = syscall(223, -1, (unsigned long)(fake_pgd), (unsigned long)base);	
 	if (ret < 0)
 		return ret;
 /*====================Print starts below here====================*/
-	unsigned long pgd_iter, fake_pgd_index, pte_index;
+	unsigned long va_iter, fake_pgd_index, pte_index;
 	unsigned long remap_pte_base, remap_pte;
-	
+	unsigned long *fake_pgd_temp;
 /* print everything*/
+	fake_pgd_temp = fake_pgd;
 	printf("[index]\t[virt]\t\t[phys]\t\t[y]\t[f]\t[d]\t[rdo]\t[xn]\n");
 
-	for (pgd_iter = 0x00000000; pgd_iter < 0xc0000000; pgd_iter += 0x00001000) {
-		fake_pgd_index = pgd_iter >> 21;
 
-		if (!(*(fake_pgd += fake_pgd_index)))
-			remap_pte_base = 0x00000000;
-		else
-			remap_pte_base = *(fake_pgd += fake_pgd_index);
+	for (va_iter = 0x00000000; va_iter < 0xc0000000; va_iter+=0x00001000) {
+		pte_index = (va_iter & 0x001ff000) >> 12;
+		fake_pgd_index = va_iter >> 21;
+		printf("%lx\t%lx\n", fake_pgd_index, pte_index);
+		fake_pgd_temp += fake_pgd_index;
+		printf("%p\n", fake_pgd_temp);
 
-		for (pte_index = 0x0; pte_index < 0x200; pte_index += 0x1) {
-			if (v == 1 && remap_pte_base == 0x00000000)
-				printf("0x%lx\t0x%08lx\t\t0\t\t0\t0\t0\t0\t0\n", fake_pgd_index, remap_pte);
-			else if (v == 0 || remap_pte_base != 0x00000000) {
-				remap_pte = remap_pte_base + pte_index;
-				if (!(*(unsigned long *)remap_pte))
-					continue;
-				printf("0x%lx\t0x%08lx\t\t", fake_pgd_index, remap_pte);
-				PrintFakePgd(*(unsigned long *)remap_pte);
+		if (!(*fake_pgd_temp)) {
+			printf("skip A\n");
+			continue;
+		} else {
+			remap_pte_base = *(fake_pgd_temp += fake_pgd_index);
+			printf("0x%08lx\n", remap_pte_base);
+			if (remap_pte_base == 0x00000000) {
+				printf("skip B\n");
+				continue;
 			}
+			remap_pte = remap_pte_base + pte_index;
+			printf("0x%08lx\n", remap_pte);
+			//if (!(*(unsigned long *)remap_pte)) {
+			//	continue;
+			//}
+			//printf("0x%lx\t0x%lx\t\t", fake_pgd_index, va_iter);
+			//PrintFakePgd(remap_pte/**(unsigned long *)remap_pte*/);
 		}
 	}
-/*
-	if (v == 1) {
-		for (iter = 0; iter < pgd_num; iter++) {
-			remap_pte = (*fake_pgd);
-			fake_pgd++;
-			remap_pte = (*fake_pgd);
-			if (iter != pgd_num -1)
-				fake_pgd++;
-			if (remap_pte != 0x00000000)
-				PrintFakePgd(iter, remap_pte);
-			else
-				printf("Skip fake_pgd: %d\n", iter);
-			//PrintFakePgd((iter * 2 + 1), remap_pte);
-		}
-	} else {
-		for (iter = 0; iter < pgd_num; iter++) {
-			remap_pte[0] = (*fake_pgd);
-			fake_pgd++;
-			remap_pte[1] = (*fake_pgd);
-			if (iter != pgd_num -1)
-				fake_pgd++;
 
-			if ((remap_pte[0] & 0xff) != 0x00000000)
-				PrintFakePgd((iter * 2), remap_pte[0]);
-				//printf("fake_pgd[%d][0] = 0x%08lx\t", iter, fake_pgd_entry[0]);
-			if ((remap_pte[1] & 0xff) != 0x00000000)
-				PrintFakePgd((iter * 2 + 1), remap_pte[1]);
-				//printf("fake_pgd[%d][1] = 0x%08lx\n", iter, fake_pgd_entry[1]);
-		}
-	}
-*/
 	close(fd);
 //	free((void*)fake_pgd);
 	munmap((void *)base, pgd_num * (2^10) * sizeof(unsigned long));

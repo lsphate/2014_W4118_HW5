@@ -26,7 +26,7 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 	int pgd_num = (PTRS_PER_PGD / 4) * 3;
 	pgd_t *pgd_crnt;
 	unsigned long pte_base, *fake_pgd_k, *fake_pgd_k_temp;
-	unsigned long pte_0_base, pte_1_base, pte_0_ctrl, pte_1_ctrl;
+	unsigned long pte_0_base, pte_1_base;
 
 	struct task_struct *p = pid_task(find_vpid(pid), PIDTYPE_PID);
 	struct mm_struct *mm = p->mm;
@@ -39,27 +39,13 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 	pgd_crnt = mm->pgd;
 	for (iter = 0; iter < USER_PTRS_PER_PGD; iter++) {
 		pte_base = ((unsigned long)((*pgd_crnt)[0])) & 0xfffff000;
-//		pte_0_base = (unsigned long *)(pte_base + 0x800);
-//		pte_1_base = (unsigned long *)(pte_base + 0xc00);
 		pte_0_base = (*pgd_crnt)[0];
 		pte_1_base = (*pgd_crnt)[1];
-//		pte_0_ctrl = pte_0_base & (0xfff);
-//		pte_1_ctrl = pte_1_base & (0xfff);
 		printk("(%d)L1 Table Ptr: 0x%08lx ---> L2 Table base: 0x%08lx\n", iter, pgd_crnt, pte_base);
 		printk("\tL2 H/W Table Base Pointer[0] = 0x%08lx\n", pte_0_base);
 		printk("\tL2 H/W Table Base Pointer[1] = 0x%08lx\n", pte_1_base);
 		pgd_crnt++;
 
-/*
- *  remap_pfn_range - remap kernel memory to userspace
- *  @vma: user vma to map to
- *  @addr: target user address to start at
- *  @pfn: physical address of kernel memory
- *  @size: size of map area
- *  @prot: page protection flags for this mapping
- *
- *  Note: this is only safe if the mm semaphore is held when called.
- */
 		down_write(&(current->mm->mmap_sem));
 		if (pte_base != 0x00000000) {
 			if (!access_ok(VERIFY_WRITE, addr, PAGE_SIZE))
@@ -68,21 +54,16 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 				remap_pfn_range(find_vma(current->mm, addr), addr, pte_base >> PAGE_SHIFT, PAGE_SIZE,
 					current->mm->mmap->vm_page_prot);
 				*fake_pgd_k = addr;
-				/*fake_pgd_k++;
-				*fake_pgd_k = addr + 0xc00;*/
-				if (iter != pgd_num -1)
-					fake_pgd_k++;
 			}
 			printk("Remap L2 Table: %d\n", iter);
 		} else
 			printk("Skip L1 Table: %d\n", iter);
-
 		up_write(&(current->mm->mmap_sem));
+		if (iter != pgd_num -1)
+			fake_pgd_k++;
 		addr += PAGE_SIZE;
-
 	}
 	printk("Number of pgd: %d\n", pgd_num);
-	printk("fake_pgd_k : %lx, fake_pgd_k_temp : %lx\n", fake_pgd_k, fake_pgd_k_temp);
 	if (copy_to_user((unsigned long *)fake_pgd, fake_pgd_k_temp, sizeof(unsigned long) * 4096))
 		return -EFAULT;
 	kfree(fake_pgd_k_temp);
