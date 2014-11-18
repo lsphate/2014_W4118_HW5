@@ -26,7 +26,7 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 	int pgd_num = (PTRS_PER_PGD / 4) * 3;
 	pgd_t *pgd_crnt;
 	unsigned long pte_base, *fake_pgd_k, *fake_pgd_k_temp;
-	unsigned long pte_0_base, pte_1_base;
+	unsigned long pte_0_base, pte_1_base, pte_0_ctrl, pte_1_ctrl;
 
 	struct task_struct *p = pid_task(find_vpid(pid), PIDTYPE_PID);
 	struct mm_struct *mm = p->mm;
@@ -43,6 +43,8 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 //		pte_1_base = (unsigned long *)(pte_base + 0xc00);
 		pte_0_base = (*pgd_crnt)[0];
 		pte_1_base = (*pgd_crnt)[1];
+//		pte_0_ctrl = pte_0_base & (0xfff);
+//		pte_1_ctrl = pte_1_base & (0xfff);
 		printk("(%d)L1 Table Ptr: 0x%08lx ---> L2 Table base: 0x%08lx\n", iter, pgd_crnt, pte_base);
 		printk("\tL2 H/W Table Pointer[0] = 0x%08lx\n", pte_0_base);
 		printk("\tL2 H/W Table Pointer[1] = 0x%08lx\n", pte_1_base);
@@ -64,9 +66,9 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 		else {
 			remap_pfn_range(find_vma(current->mm, addr), addr, pte_base >> PAGE_SHIFT, PAGE_SIZE,
 				current->mm->mmap->vm_page_prot);
-			*fake_pgd_k = pte_0_base;
+			*fake_pgd_k = addr + 0x800;
 			fake_pgd_k++;
-			*fake_pgd_k = pte_1_base;
+			*fake_pgd_k = addr + 0xc00;
 			if (iter != pgd_num -1)
 				fake_pgd_k++;
 		}
@@ -75,7 +77,7 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 	}
 	printk("Number of pgd: %d\n", pgd_num);
 	printk("fake_pgd_k : %lx, fake_pgd_k_temp : %lx\n", fake_pgd_k, fake_pgd_k_temp);
-	if (copy_to_user((unsigned long *)fake_pgd, fake_pgd_k_temp, sizeof(unsigned long) * 4096))
+	if (copy_to_user((unsigned long *)fake_pgd, fake_pgd_k_temp, sizeof(unsigned long) * 3072))
 		return -EFAULT;
 	kfree(fake_pgd_k_temp);
 	return 0;	

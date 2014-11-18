@@ -18,18 +18,19 @@
 #define L_PTE_RDONLY	(0x1 << 7)
 #define L_PTE_XN	(0x1 << 9)
 
-void PrintFakePgd(int index, unsigned long fake_pgd_entry)
+void PrintFakePgd(int index, unsigned long remap_pte)
 {
 	unsigned long young_bit, file_bit, dirty_bit, rdonly_bit, xn_bit;
-	unsigned long virt, phys;
+	unsigned long virt, phys, temp;
 
 	virt = 0x00000000 + index * PAGE_SIZE;
-	phys = fake_pgd_entry;
-	young_bit =	fake_pgd_entry & L_PTE_YOUNG;
-	file_bit =	fake_pgd_entry & L_PTE_FILE;
-	dirty_bit =	fake_pgd_entry & L_PTE_DIRTY;
-	rdonly_bit =	fake_pgd_entry & L_PTE_RDONLY;
-	xn_bit =	fake_pgd_entry & L_PTE_XN;
+	temp = remap_pte/* & 0xfffffc00*/;
+	phys = temp;
+	young_bit =	temp & L_PTE_YOUNG;
+	file_bit =	temp & L_PTE_FILE;
+	dirty_bit =	temp & L_PTE_DIRTY;
+	rdonly_bit =	temp & L_PTE_RDONLY;
+	xn_bit =	temp & L_PTE_XN;
 
 	printf("0x%d\t0x%08lx\t0x%08lx\t", index, virt, phys);
 	printf("%lx\t%lx\t%lx\t%lx\t%lx\n", young_bit, file_bit, dirty_bit, rdonly_bit, xn_bit);
@@ -62,7 +63,7 @@ int main(int argc, char **argv)
 		perror("file open error.\n");
 
 	pgd_num = (PTRS_PER_PGD / 4) * 3;
-	base = mmap(NULL, pgd_num * (2^10) * sizeof(unsigned long), PROT_WRITE, MAP_PRIVATE, fd, 0);
+	base = mmap(NULL, pgd_num * (2^10) * sizeof(unsigned long), PROT_READ, MAP_PRIVATE, fd, 0);
 	if (base < 0) {
 		perror("mmap error.\n");
 		return -1;
@@ -79,37 +80,37 @@ int main(int argc, char **argv)
 		return ret;
 /*====================Print starts below here====================*/
 	int iter;
-	unsigned long fake_pgd_entry[2];
+	unsigned long remap_pte[2];
 	
 /* print everything*/
 	printf("[index]\t[virt]\t\t[phys]\t\t[y]\t[f]\t[d]\t[rdo]\t[xn]\n");
 	if (v == 1) {
 		for (iter = 0; iter < pgd_num; iter++) {
-			fake_pgd_entry[0] = (*fake_pgd);
+			remap_pte[0] = (*fake_pgd);
 			fake_pgd++;
-			fake_pgd_entry[1] = (*fake_pgd);
+			remap_pte[1] = (*fake_pgd);
 			if (iter != pgd_num -1)
 				fake_pgd++;
 
-			PrintFakePgd((iter * 2), fake_pgd_entry[0]);
-			PrintFakePgd((iter * 2 + 1), fake_pgd_entry[1]);
+			PrintFakePgd((iter * 2), remap_pte[0]);
+			PrintFakePgd((iter * 2 + 1), remap_pte[1]);
 			//printf("fake_pgd[%d][0] = 0x%08lx\t", iter, fake_pgd_entry[0]);
 			//printf("fake_pgd[%d][1] = 0x%08lx\n", iter, fake_pgd_entry[1]);
 		}
 	} else {
 /* print that is not NULL */
 		for (iter = 0; iter < pgd_num; iter++) {
-			fake_pgd_entry[0] = (*fake_pgd);
+			remap_pte[0] = (*fake_pgd);
 			fake_pgd++;
-			fake_pgd_entry[1] = (*fake_pgd);
+			remap_pte[1] = (*fake_pgd);
 			if (iter != pgd_num -1)
 				fake_pgd++;
 
-			if (fake_pgd_entry[0] != 0x00000000)
-				PrintFakePgd((iter * 2), fake_pgd_entry[0]);
+			if ((remap_pte[0] & 0xff) != 0x00000000)
+				PrintFakePgd((iter * 2), remap_pte[0]);
 				//printf("fake_pgd[%d][0] = 0x%08lx\t", iter, fake_pgd_entry[0]);
-			if (fake_pgd_entry[1] != 0x00000000)
-				PrintFakePgd((iter * 2 + 1), fake_pgd_entry[1]);
+			if ((remap_pte[1] & 0xff) != 0x00000000)
+				PrintFakePgd((iter * 2 + 1), remap_pte[1]);
 				//printf("fake_pgd[%d][1] = 0x%08lx\n", iter, fake_pgd_entry[1]);
 		}
 	}
