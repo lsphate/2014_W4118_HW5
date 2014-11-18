@@ -87,27 +87,28 @@ int main(int argc, char **argv)
 	for (va_iter = 0x00000000; va_iter < 0xc0000000; va_iter+=0x00001000) {
 		pte_index = (va_iter & 0x001ff000) >> 12;
 		fake_pgd_index = va_iter >> 21;
-		printf("%lx\t%lx\n", fake_pgd_index, pte_index);
-		fake_pgd_temp += fake_pgd_index;
-		printf("%p\n", fake_pgd_temp);
-
+		//printf("%d\t%lx\n", (unsigned int)fake_pgd_index, pte_index);
+		fake_pgd_temp = fake_pgd + fake_pgd_index;
+		//printf("%p\n", fake_pgd_temp);
+		//printf("yay\n");
 		if (!(*fake_pgd_temp)) {
-			printf("skip A\n");
+			//printf("skip A\n");
 			continue;
 		} else {
-			remap_pte_base = *(fake_pgd_temp += fake_pgd_index);
-			printf("0x%08lx\n", remap_pte_base);
-			if (remap_pte_base == 0x00000000) {
-				printf("skip B\n");
-				continue;
-			}
-			remap_pte = remap_pte_base + pte_index;
-			printf("0x%08lx\n", remap_pte);
-			//if (!(*(unsigned long *)remap_pte)) {
+			remap_pte_base = *fake_pgd_temp;
+			//printf("0x%08lx\n", remap_pte_base);
+			//if (remap_pte_base == 0x00000000) {
+				//printf("skip B\n");
 			//	continue;
 			//}
-			//printf("0x%lx\t0x%lx\t\t", fake_pgd_index, va_iter);
-			//PrintFakePgd(remap_pte/**(unsigned long *)remap_pte*/);
+			remap_pte = remap_pte_base + pte_index;
+			//printf("0x%08lx\n", remap_pte);
+			///if (!(*(unsigned long *)remap_pte)) {
+			//	printf("SKIP\n");
+			//	continue;
+			//}
+			printf("0x%d\t0x%08lx\t\t", (unsigned int)fake_pgd_index, va_iter);
+			PrintFakePgd(/**(unsigned long *)*/remap_pte);
 		}
 	}
 
