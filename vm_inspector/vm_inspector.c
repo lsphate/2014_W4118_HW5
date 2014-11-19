@@ -39,21 +39,21 @@ void PrintFakePgd(unsigned long remap_pte)
 
 int main(int argc, char **argv)
 {
-	int pid, fd, ret;
+	int pid, fd, ret, v;
 	unsigned long *base, *fake_pgd;
 
 	base = NULL;
 	fake_pgd = NULL;
 	if (argv[2] == '\0') {
 		pid = atoi(argv[1]);
-		//v = 0;
+		v = 0;
 	} else {
 		pid = atoi(argv[2]);
-		//v = 1;
+		v = 1;
 	}
 
 /* this printf will cause crashing = = */
-//	printf ("pid : %d\n", pid);
+	printf ("pid : %d, v : %d\n", pid, v);
 	if (pid < -1)
 		return -EINVAL;
 
@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	ret = syscall(223, -1, (unsigned long)(fake_pgd), (unsigned long)base);
+	ret = syscall(223, pid, (unsigned long)(fake_pgd), (unsigned long)base);
 	if (ret < 0)
 		return ret;
 /*====================Print starts below here====================*/
