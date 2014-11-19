@@ -26,9 +26,13 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 	pgd_t *pgd_crnt;
 	unsigned long L2T_base, *fake_pgd_k, *fake_pgd_k_iter;
 	unsigned long pte_0_base, pte_1_base;
-	struct task_struct *p = pid_task(find_vpid(pid), PIDTYPE_PID);
-	struct mm_struct *mm = p->mm;
+	struct task_struct *p = NULL;
+	struct mm_struct *mm = NULL;
 
+	p = pid_task(find_vpid(pid), PIDTYPE_PID);
+	if (p == NULL)
+		return -EINVAL;
+	mm = p->mm;
 	pgd_num = (PTRS_PER_PGD / 4) * 3;
 	fake_pgd_k = kmalloc(sizeof(unsigned long) * pgd_num * 2, GFP_KERNEL);
 	if (!fake_pgd_k)
