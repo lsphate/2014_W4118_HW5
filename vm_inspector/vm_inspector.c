@@ -19,7 +19,8 @@
 
 void PrintFakePgd(unsigned long remap_pte)
 {
-	unsigned long phys, young_bit, file_bit, dirty_bit, rdonly_bit, xn_bit;
+	unsigned long phys;
+	unsigned long young_bit, file_bit, dirty_bit, rdonly_bit, xn_bit;
 
 	phys = remap_pte >> 12;
 	young_bit =	(remap_pte & L_PTE_YOUNG)	>> 1;
@@ -51,9 +52,7 @@ int main(int argc, char **argv)
 		pid = atoi(argv[2]);
 		v = 1;
 	}
-
-/* this printf will cause crashing = = */
-	printf ("pid : %d, v : %d\n", pid, v);
+	printf("pid : %d, v : %d\n", pid, v);
 	if (pid < -1)
 		return -EINVAL;
 
@@ -75,7 +74,8 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	ret = syscall(223, pid, (unsigned long)(fake_pgd), (unsigned long)base);
+	ret = syscall(223, pid, (unsigned long)(fake_pgd),
+			(unsigned long)base);
 	if (ret < 0)
 		return ret;
 /*====================Print starts below here====================*/
@@ -108,8 +108,8 @@ int main(int argc, char **argv)
 					va_iter);
 			} else {
 				remap_pte_base = *fake_pgd_iter;
- 				remap_pte = remap_pte_base + pte_index;
-				printf("0x%d\t0x%08lx\t\t", 
+				remap_pte = remap_pte_base + pte_index;
+				printf("0x%d\t0x%08lx\t\t",
 						(unsigned int)fake_pgd_index,
 						va_iter);
 						PrintFakePgd(remap_pte);
