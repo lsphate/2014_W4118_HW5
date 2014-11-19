@@ -90,15 +90,30 @@ int main(int argc, char **argv)
 		pte_index = (va_iter & 0x001ff000) >> 12;
 		fake_pgd_index = va_iter >> 21;
 		fake_pgd_iter = fake_pgd + fake_pgd_index;
-		if (!(*fake_pgd_iter)) {
-			continue;
+		if (v == 0) {
+			if (!(*fake_pgd_iter)) {
+				continue;
+			} else {
+				remap_pte_base = *fake_pgd_iter;
+				remap_pte = remap_pte_base + pte_index;
+				printf("0x%d\t0x%08lx\t\t",
+						(unsigned int)fake_pgd_index,
+						va_iter);
+				PrintFakePgd(remap_pte);
+			}
 		} else {
-			remap_pte_base = *fake_pgd_iter;
-			remap_pte = remap_pte_base + pte_index;
-			printf("0x%d\t0x%08lx\t\t",
+			if (!(*fake_pgd_iter)) {
+				printf("0x%d\t0x%08lx\t\t0\t0\t0\t0\t0\t0\t\n",
 					(unsigned int)fake_pgd_index,
 					va_iter);
-			PrintFakePgd(remap_pte);
+			} else {
+				remap_pte_base = *fake_pgd_iter;
+ 				remap_pte = remap_pte_base + pte_index;
+				printf("0x%d\t0x%08lx\t\t", 
+						(unsigned int)fake_pgd_index,
+						va_iter);
+						PrintFakePgd(remap_pte);
+			}
 		}
 	}
 
