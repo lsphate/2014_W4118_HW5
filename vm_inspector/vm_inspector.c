@@ -26,7 +26,7 @@ void PrintFakePgd(unsigned long remap_pte)
 	young_bit =	(remap_pte & L_PTE_YOUNG)	>> 1;
 	file_bit =	(remap_pte & L_PTE_FILE)	>> 2;
 	dirty_bit =	(remap_pte & L_PTE_DIRTY)	>> 6;
-	rdonly_bit =	(remap_pte & L_PTE_RDONLY)	>> 7;
+	rdonly_bit =	(!((remap_pte & L_PTE_RDONLY)	>> 7));
 	xn_bit =	(remap_pte & L_PTE_XN)		>> 9;
 
 	printf("0x%lx\t\t%d\t%d\t%d\t%d\t%d\n",
