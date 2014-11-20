@@ -45,11 +45,10 @@ int main(int argc, char **argv)
 
 	base = NULL;
 	fake_pgd = NULL;
-	if (argc < 2){
+	if (argc < 2) {
 		printf("error: please input a PID\n");
 		return -EINVAL;
-	}	
-	else if (argv[2] == '\0') {
+	} else if (argv[2] == '\0') {
 		pid = atoi(argv[1]);
 		v = 0;
 	} else {
