@@ -1,0 +1,16 @@
+Assignment 5
+
+This helps a lot, seirously:
+	http://www.binaryhexconverter.com/
+
+	In the vm_inspector, we check the arguments. If "-v" is passed, the overall maping of VA will be dump, for those pgds and ptes are not valid, they will show 0; If the pid is invalid, error messages will print.
+	It will also allocate two pieces of memory: first is for fake_pgd, which have 2048 entries (size of UL each), the second one is called addr, which size is PTRS_PER_PGD * PAGE_SIZE. Errors of failure operations are returned.
+
+	In system call, it traverses all pgd, in the meanwhile it traces the VA as well. for each pgd, it will find the related pte, the get that L2 table's base adress, remap that page to user space's addr, and store a point the that addr in fake_pgd.
+
+How to invoke the program:
+	Type "vm_inspector -v <pid>"
+	-v: 	verbose - it will print the whole map of the process.
+	<pid>:	pid of the process want to print its memory map. "-1" specified to "current" pid.
+
+	Lack of input pid will get an error.
