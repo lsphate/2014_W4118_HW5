@@ -26,10 +26,10 @@ void PrintFakePgd(unsigned long remap_pte)
 	young_bit =	(remap_pte & L_PTE_YOUNG)	>> 1;
 	file_bit =	(remap_pte & L_PTE_FILE)	>> 2;
 	dirty_bit =	(remap_pte & L_PTE_DIRTY)	>> 6;
-	rdonly_bit =	(!((remap_pte & L_PTE_RDONLY)	>> 7));
-	xn_bit =	(!((remap_pte & L_PTE_XN)	>> 9));
+	rdonly_bit =	(((remap_pte & L_PTE_RDONLY)	>> 7));
+	xn_bit =	(((remap_pte & L_PTE_XN)	>> 9));
 
-	printf("0x%lx\t\t%d\t%d\t%d\t%d\t%d\n",
+	printf("0x%05lx\t\t%d\t%d\t%d\t%d\t%d\n",
 			phys,
 			(unsigned int)young_bit,
 			(unsigned int)file_bit,
@@ -40,7 +40,7 @@ void PrintFakePgd(unsigned long remap_pte)
 
 int main(int argc, char **argv)
 {
-	int pid, fd, ret, v;
+	int pid, ret, v;
 	unsigned long *base, *fake_pgd;
 
 	base = NULL;
@@ -59,12 +59,8 @@ int main(int argc, char **argv)
 	if (pid < -1)
 		return -EINVAL;
 
-	fd = open("/dev/zero", O_CREAT);
-	if (fd < 0)
-		perror("file open error.\n");
-
-	base = mmap(NULL, PTRS_PER_PGD * (2^10) * sizeof(unsigned long),
-			PROT_READ, MAP_PRIVATE, fd, 0);
+	base = mmap(NULL, PTRS_PER_PGD * PAGE_SIZE,
+			PROT_READ, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 	if (base < 0) {
 		perror("mmap error.\n");
 		return -1;
@@ -89,38 +85,45 @@ int main(int argc, char **argv)
 	fake_pgd_iter = fake_pgd;
 	printf("[index]\t[virt]\t\t\t[phys]\t\t[y]\t[f]\t[d]\t[rdo]\t[xn]\n");
 
-	for (va_iter = 0x0; va_iter < 0xc0000000; va_iter += 0x1000) {
+	for (va_iter = 0x0; va_iter < 0xbf000000; va_iter += 0x1000) {
 		pte_index = (va_iter & 0x001ff000) >> 12;
 		fake_pgd_index = va_iter >> 21;
 		fake_pgd_iter = fake_pgd + fake_pgd_index;
 		if (v == 0) {
-			if (!(*fake_pgd_iter)) {
+			if (!(*fake_pgd_iter))
 				continue;
-			} else {
+			else {
 				remap_pte_base = *fake_pgd_iter;
-				remap_pte = remap_pte_base + pte_index;
-				printf("0x%d\t0x%08lx\t\t",
-						(unsigned int)fake_pgd_index,
-						va_iter);
-				PrintFakePgd(remap_pte);
+				remap_pte = remap_pte_base + (pte_index * sizeof(unsigned long));
+				if (!(*(unsigned long *)remap_pte))
+					continue;
+				else {
+					printf("0x%d\t0x%08lx\t\t",
+							(unsigned int)fake_pgd_index,
+							va_iter);
+					PrintFakePgd(*(unsigned long *)remap_pte);
+				}
 			}
 		} else {
 			if (!(*fake_pgd_iter)) {
-				printf("0x%d\t0x%08lx\t\t0\t0\t0\t0\t0\t0\t\n",
+				printf("0x%d\t0x%08lx\t\t0\t\t0\t0\t0\t0\t0\t\n",
 					(unsigned int)fake_pgd_index,
 					va_iter);
 			} else {
 				remap_pte_base = *fake_pgd_iter;
-				remap_pte = remap_pte_base + pte_index;
-				printf("0x%d\t0x%08lx\t\t",
-						(unsigned int)fake_pgd_index,
-						va_iter);
-						PrintFakePgd(remap_pte);
+				remap_pte = remap_pte_base + (pte_index * sizeof(unsigned long));
+				if (!(*(unsigned long *)remap_pte))
+					continue;
+				else {
+					printf("0x%d\t0x%08lx\t\t",
+							(unsigned int)fake_pgd_index,
+							va_iter);
+					PrintFakePgd(*(unsigned long *)remap_pte);
+				}
 			}
 		}
 	}
 
-	close(fd);
 	/*free((void*)fake_pgd);*/
 	munmap((void *)base, PTRS_PER_PGD * (2^10) * sizeof(unsigned long));
 	return ret;

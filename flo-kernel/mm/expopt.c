@@ -29,22 +29,26 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 	unsigned long va, L2T_base, *fake_pgd_k, *fake_pgd_k_iter;
 	/*unsigned long pte_0_base, pte_1_base;*/
 	struct task_struct *p = NULL;
-	struct mm_struct *mm = NULL;
+	struct mm_struct *mm = NULL, *mm_cur = NULL;
+	long ret = 0;
 
 	p = pid_task(find_vpid(pid), PIDTYPE_PID);
 	if (p == NULL)
 		return -EINVAL;
-	mm = p->mm;
+	mm = get_task_mm(p);
+	mm_cur = get_task_mm(current);
 	pgd_num = (PTRS_PER_PGD / 4) * 3;
-	fake_pgd_k = kmalloc(sizeof(unsigned long) * pgd_num * 2, GFP_KERNEL);
+	fake_pgd_k = kmalloc(sizeof(unsigned long) * pgd_num, GFP_KERNEL);
 	if (!fake_pgd_k)
 		return -EFAULT;
 
 	fake_pgd_k_iter = fake_pgd_k;
 	pgd_crnt = mm->pgd;
 
-	for (va = 0x1000; va < TASK_SIZE; va += 0x200000) {
-		/*for (iter = 0; iter < USER_PTRS_PER_PGD; iter++) {*/
+	for (va = 0x0; va < TASK_SIZE; va += 0x200000) {
+		if (va == 0x0)
+			va = 0x1000;
+
 		pgd_crnt = pgd_offset(mm, va);
 		if (!pgd_crnt)
 			return -EFAULT;
@@ -70,31 +74,40 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 		pr_debug("\tL2 H/W Tbl Base Ptr[1] = 0x%08lx\n", pte_1_base);
 		pgd_crnt++;
 */
-		down_write(&(current->mm->mmap_sem));
+		*fake_pgd_k_iter = 0;
+		down_write(&(mm_cur->mmap_sem));
 		if (L2T_base != 0x00000000) {
 			if (access_ok(VERIFY_WRITE, addr, PAGE_SIZE)) {
-				remap_pfn_range(find_vma(current->mm, addr),
+				struct vm_area_struct *vma = find_vma(mm_cur, addr);
+				printk("vma = %p", vma);
+				ret = remap_pfn_range(find_vma(mm_cur, addr),
 					addr,
 					L2T_base >> PAGE_SHIFT,
 					PAGE_SIZE,
-					current->mm->mmap->vm_page_prot);
+					PAGE_READONLY);
+				if (ret < 0)
+					pr_debug("===== %d remap error!!! =====\n", iter / 2);
 				*fake_pgd_k_iter = addr;
 			} else
 				return -EFAULT;
 			pr_debug("Remap L2 Table: %d\n", iter/2);
 		} else
 			pr_debug("Skip  L1 Table: %d\n", iter/2);
-		up_write(&(current->mm->mmap_sem));
+		up_write(&(mm_cur->mmap_sem));
 
 		if (iter != pgd_num - 1)
 			fake_pgd_k_iter++;
 		addr += PAGE_SIZE;
+		if (va == 0x1000)
+			va = 0x0;
 	}
 
 	if (copy_to_user((unsigned long *)fake_pgd,
 				fake_pgd_k,
-				sizeof(unsigned long) * 4096))
+				sizeof(unsigned long) * pgd_num))
 		return -EFAULT;
+	mmput(mm);
+	mmput(mm_cur);
 	kfree(fake_pgd_k);
 	return 0;
 }
