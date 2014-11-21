@@ -1,3 +1,17 @@
+TESTING
+
+We tested against Shih-Wei Li's test program pagemap to verify we got the correct output. For instance for an entry in Zygote we get:
+0x1525  0xbea5c000              0xcf895         1       1       1       0       1
+
+With Shih-Wei Li's program we get:
+Vaddr: 0xbea5c000, Page_size: 4096, Entry_size: 8
+Reading /proc/180/pagemap at 0x5f52e0
+[0]0x95 [1]0xf8 [2]0xc [3]0x0 [4]0x0 [5]0x0 [6]0x0 [7]0x86
+Result: 0x86000000000cf895
+PFN: 0xcf895
+
+---------------
+
 Most of the shared memory between the Zygote process and another process, such as the Youtube app, consists of system libraries. Our mapping dumps are below and you can see that a lot of the /system/lib processes share the same address between the Zygote and Youtube output. However, toward the end of the dump the [stack] addresses differ between the two processes. This makes sense as you wouldn't want to duplicate each library per process so they access the same address to run things like the GL libraries or common android utils. 
 
 The Zygote process ends with the following before its own stack:

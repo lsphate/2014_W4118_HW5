@@ -14,3 +14,15 @@ How to invoke the program:
 	<pid>:	pid of the process want to print its memory map. "-1" specified to "current" pid.
 
 	Lack of input pid will get an error.
+
+TESTING
+
+We tested against Shih-Wei Li's test program pagemap to verify we got the correct output. For instance for an entry in Zygote we get:
+0x1525	0xbea5c000		0xcf895		1	1	1	0	1
+
+With Shih-Wei Li's program we get:
+Vaddr: 0xbea5c000, Page_size: 4096, Entry_size: 8
+Reading /proc/180/pagemap at 0x5f52e0
+[0]0x95 [1]0xf8 [2]0xc [3]0x0 [4]0x0 [5]0x0 [6]0x0 [7]0x86
+Result: 0x86000000000cf895
+PFN: 0xcf895
