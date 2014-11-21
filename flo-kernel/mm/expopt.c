@@ -38,7 +38,7 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 	mm = get_task_mm(p);
 	mm_cur = get_task_mm(current);
 	pgd_num = (PTRS_PER_PGD / 4) * 3;
-	fake_pgd_k = kmalloc(sizeof(unsigned long) * pgd_num, GFP_KERNEL);
+	fake_pgd_k = kmalloc_array(pgd_num, sizeof(unsigned long), GFP_KERNEL);
 	if (!fake_pgd_k)
 		return -EFAULT;
 
@@ -78,15 +78,13 @@ SYSCALL_DEFINE3(expose_page_table, pid_t, pid,
 		down_write(&(mm_cur->mmap_sem));
 		if (L2T_base != 0x00000000) {
 			if (access_ok(VERIFY_WRITE, addr, PAGE_SIZE)) {
-				struct vm_area_struct *vma = find_vma(mm_cur, addr);
-				printk("vma = %p", vma);
 				ret = remap_pfn_range(find_vma(mm_cur, addr),
 					addr,
 					L2T_base >> PAGE_SHIFT,
 					PAGE_SIZE,
 					PAGE_READONLY);
 				if (ret < 0)
-					pr_debug("===== %d remap error!!! =====\n", iter / 2);
+					pr_debug("Remap_pfn_range failed!\n");
 				*fake_pgd_k_iter = addr;
 			} else
 				return -EFAULT;

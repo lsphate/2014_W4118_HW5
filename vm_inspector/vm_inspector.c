@@ -94,31 +94,39 @@ int main(int argc, char **argv)
 				continue;
 			else {
 				remap_pte_base = *fake_pgd_iter;
-				remap_pte = remap_pte_base + (pte_index * sizeof(unsigned long));
+				remap_pte = remap_pte_base +
+					(pte_index * sizeof(unsigned long));
 				if (!(*(unsigned long *)remap_pte))
 					continue;
 				else {
 					printf("0x%d\t0x%08lx\t\t",
-							(unsigned int)fake_pgd_index,
-							va_iter);
-					PrintFakePgd(*(unsigned long *)remap_pte);
+						(unsigned int)fake_pgd_index,
+						va_iter);
+					PrintFakePgd(
+						*(unsigned long *)remap_pte);
 				}
 			}
 		} else {
 			if (!(*fake_pgd_iter)) {
-				printf("0x%d\t0x%08lx\t\t0\t\t0\t0\t0\t0\t0\t\n",
-					(unsigned int)fake_pgd_index,
-					va_iter);
+				printf(
+				"0x%d\t0x%08lx\t\t0\t\t0\t0\t0\t0\t0\t\n",
+				(unsigned int)fake_pgd_index,
+				va_iter);
 			} else {
 				remap_pte_base = *fake_pgd_iter;
-				remap_pte = remap_pte_base + (pte_index * sizeof(unsigned long));
-				if (!(*(unsigned long *)remap_pte))
-					continue;
-				else {
+				remap_pte = remap_pte_base +
+					(pte_index * sizeof(unsigned long));
+				if (!(*(unsigned long *)remap_pte)) {
+					printf(
+					"0x%d\t0x%08lx\t\t0\t\t0\t0\t0\t0\t0\t\n",
+					(unsigned int)fake_pgd_index,
+					va_iter);
+				} else {
 					printf("0x%d\t0x%08lx\t\t",
-							(unsigned int)fake_pgd_index,
-							va_iter);
-					PrintFakePgd(*(unsigned long *)remap_pte);
+						(unsigned int)fake_pgd_index,
+						va_iter);
+					PrintFakePgd(
+						*(unsigned long *)remap_pte);
 				}
 			}
 		}
